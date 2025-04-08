@@ -1,13 +1,15 @@
-from fastapi import Request, Response
+from fastapi import Request
 from fastapi.middleware import Middleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 ALLOWED_HOSTS_DEV = [
     "localhost",
-    "127.0.0.1"
+    "127.0.0.1",
+    "testserver"
 ]
 
 CORS_ALLOW_ORIGINS_DEV = [
@@ -15,22 +17,23 @@ CORS_ALLOW_ORIGINS_DEV = [
     "http://127.0.0.1:3000"
 ]
 
-async def security_headers_middleware(request: Request, call_next):
-    response = await call_next(request)
-    security_headers = {
-        "X-Frame-Options": "DENY",
-        "X-Content-Type-Options": "nosniff",
-        "X-XSS-Protection": "1; mode=block",
-        "Content-Security-Policy": "default-src 'self';",
-        "Permissions-Policy": "geolocation=(), microphone=()",
-        "Referrer-Policy": "strict-origin-when-cross-origin",
-        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
-    }
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        security_headers = {
+            "X-Frame-Options": "DENY",
+            "X-Content-Type-Options": "nosniff",
+            "X-XSS-Protection": "1; mode=block",
+            "Content-Security-Policy": "default-src 'self';",
+            "Permissions-Policy": "geolocation=(), microphone=()",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
+        }
 
-    for header, value in security_headers.items():
-        response.headers[header] = value
+        for header, value in security_headers.items():
+            response.headers[header] = value
 
-    return response
+        return response
 
 def get_security_middleware(is_production: bool = False):
     if is_production:
@@ -39,8 +42,9 @@ def get_security_middleware(is_production: bool = False):
     else:
         allowed_hosts = ALLOWED_HOSTS_DEV
         allow_origins = CORS_ALLOW_ORIGINS_DEV
+
     return [
-        Middleware(security_headers_middleware),
+        Middleware(SecurityHeadersMiddleware),
         Middleware(
             TrustedHostMiddleware,
             allowed_hosts=allowed_hosts
