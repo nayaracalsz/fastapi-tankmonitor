@@ -7,7 +7,7 @@ and cloud database connectivity.
 
 [🔗 Frontend repository](https://github.com/MarcoCortez091118/react-tankmonitor-ui-chakra)
 
-## How to use it
+## ❔ How to use it
 **Step 1** - Clone the project
 
 ```bash
@@ -48,6 +48,44 @@ uvicorn app.main:app --reload
 * Docs
   - Swagger UI: http://localhost:8000/docs
   - Redoc: http://localhost:8000/redoc
+
+## 🔐 Authentication (Auth Base)
+JWT authentication system included as part of the base setup. Login and registration logic will be integrated in future branches.
+
+### 🧪 Generate a mock JWT token
+Send a ```POST``` request to ```/test/token-example``` with a body like:
+```json
+{
+  "sub": "test@example.com",
+  "role": "admin",
+  "permissions": ["read", "write"]
+}
+```
+The response will look like:
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "token_type": "bearer"
+}
+```
+You can decode the token at [jwt.io](https://jwt.io/) to inspect the payload.
+
+### 🔐 Access a protected route
+Use the token in the Authorization header:
+```
+Authorization: Bearer <your_token>
+```
+Then call the route:
+```
+GET /test/token-check
+```
+Response:
+```json
+{
+  "message": "Token valid"
+}
+```
+**Note:** These routes are for development/testing purposes and should not be included in production.
 
 ## 🔌 Test the backend from frontend
 Using fetch:
