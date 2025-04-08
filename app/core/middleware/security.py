@@ -57,5 +57,5 @@ def get_security_middleware(is_production: bool = False):
             allow_credentials=True
         ),
         Middleware(GZipMiddleware, minimum_size=1000),
-        Middleware(HTTPSRedirectMiddleware)
+        #Middleware(HTTPSRedirectMiddleware)
     ]
