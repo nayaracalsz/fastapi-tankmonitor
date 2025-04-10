@@ -7,7 +7,7 @@ from app.controllers.auth_controller import router as auth_controller
 
 
 app = FastAPI(middleware=get_security_middleware())
-app.include_router(auth_controller, prefix="/test")
+app.include_router(auth_controller)
 
 @app.get("/")
 def root():

@@ -1,19 +1,43 @@
-from fastapi import APIRouter
-from fastapi.params import Depends, Body
+from fastapi import APIRouter, HTTPException
+from firebase_admin import auth
 
-from app.core.middleware import JWTBearer, decodeJWT, create_access_token
-from app.models.test_token_request import TokenResquest
+from app.models.user_model import UserFirestore
+from app.schemas.user_auth import UserRegister
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.get("/token-check", dependencies=[Depends(JWTBearer())])
-def protected():
-    return {"message": "Valid token"}
+@router.post("/register")
+async def register_user(user: UserRegister):
+    try:
+        firebase_user = auth.create_user(
+            email=user.email,
+            password=user.password,
+            display_name=user.name
+        )
 
-@router.post("/token-example", include_in_schema=False)
-def generate_token(payload: TokenResquest = Body(default=TokenResquest())):
-    token = create_access_token(payload.model_dump())
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-    }
+        firestore_user = UserFirestore(
+            uid=firebase_user.uid,
+            email=user.email,
+            name=user.name
+        )
+        firestore_user.save()
+
+
+        return {"uid": firebase_user.uid,"email": user.email}
+    except auth.EmailAlreadyExistsError:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered"
+        )
+    except auth.AuthError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Firebase auth error: {str(e)}"
+        )
+    except Exception as e:
+        if 'firebase_user' in locals():
+            auth.delete_user(firebase_user.uid)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Registration failed: {str(e)}"
+        )

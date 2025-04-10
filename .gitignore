@@ -3,7 +3,7 @@ venv/
 
 # Private configuration
 .env
-app/firebase_key.json
+app/core/firebase_key.json
 
 # IDE
 .idea/
