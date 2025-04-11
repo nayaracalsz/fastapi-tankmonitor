@@ -7,9 +7,8 @@ from app.controllers.auth_controller import router as auth_controller
 from app.core.firebase import db
 
 
-app = FastAPI()
+app = FastAPI(middleware=get_security_middleware(is_production=False))
 app.middleware("http")(password_complexity_middleware)
-# app.middleware("http")(get_security_middleware)
 app.include_router(auth_controller)
 
 @app.get("/")

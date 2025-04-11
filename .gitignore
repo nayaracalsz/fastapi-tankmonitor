@@ -7,3 +7,6 @@ app/core/firebase_key.json
 
 # IDE
 .idea/
+
+# Tests folder
+test/
