@@ -52,7 +52,7 @@ def get_security_middleware(is_production: bool = False):
         Middleware(
             CORSMiddleware,
             allow_origins=allow_origins,
-            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_methods=["*"],
             allow_headers=["*"],
             allow_credentials=True
         ),

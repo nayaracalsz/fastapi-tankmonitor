@@ -12,7 +12,18 @@ class UserBase(BaseModel):
     email: EmailStr
     name: str
     is_active: bool = True
-    created_at: datetime = datetime.now()
+    created_at: Optional[datetime] = None
+
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, value):
+        if not value or not value.strip():
+            raise ValueError('The name cannot be empty')
+        if len(value.strip()) < 2:
+            raise ValueError('The name must have at least 2 characters')
+        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$', value):
+            raise ValueError('The name can only contain letters and spaces')
+        return value
 
 class UserCreate(UserBase):
     password: str
@@ -34,7 +45,7 @@ class UserFirestore(UserBase):
 
     def save(self):
         user_data = self.model_dump()
-        user_data["create_at"] = firestore.SERVER_TIMESTAMP
+        user_data["created_at"] = firestore.SERVER_TIMESTAMP
         db.collection("users").document(self.uid).set(user_data, merge=True)
 
 class UserPublic(UserBase):

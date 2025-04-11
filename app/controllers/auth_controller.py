@@ -37,7 +37,7 @@ async def register_user(user: UserCreate):
         )
 
     except Exception as e:
-        if 'firebase_user' in locals():
+        if 'firebase_user' in locals() and firebase_user is not None:
             auth.delete_user(firebase_user.uid)
         raise HTTPException(
             status_code=500,
