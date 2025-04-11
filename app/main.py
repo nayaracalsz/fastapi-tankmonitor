@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from .core.middleware.password_validator import password_complexity_middleware
 from .core.middleware.security import get_security_middleware
 from app.controllers.auth_controller import router as auth_controller
-# from app.firebase import db
+from app.core.firebase import db
 
 
-app = FastAPI(middleware=get_security_middleware())
+app = FastAPI()
+app.middleware("http")(password_complexity_middleware)
+# app.middleware("http")(get_security_middleware)
 app.include_router(auth_controller)
 
 @app.get("/")
