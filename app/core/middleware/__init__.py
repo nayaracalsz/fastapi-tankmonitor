@@ -1,4 +1,4 @@
-from .auth import (
+from .jwt_handler import (
     create_access_token,
     decodeJWT,
     JWTBearer,
