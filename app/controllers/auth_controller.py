@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from firebase_admin import auth
 
-from app.models.user_model import UserCreate, UserFirestore
+from app.models.user_model import UserFirestore
+from app.schemas.user_schema import UserCreate
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

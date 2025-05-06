@@ -1,19 +1,20 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from .core.middleware.password_validator import password_complexity_middleware
-from .core.middleware.security import get_security_middleware
 from app.controllers.auth_controller import router as auth_controller
-from app.core.firebase import db
-
+from app.firebase.firebase import db
+from app.middleware.password_validator import password_complexity_middleware
+from app.middleware.security import get_security_middleware
 
 app = FastAPI(middleware=get_security_middleware(is_production=False))
 app.middleware("http")(password_complexity_middleware)
 app.include_router(auth_controller)
 
+
 @app.get("/")
 def root():
     return {"message": "✅ Backend is working!"}
+
 
 @app.get("/firestore-status")
 def firestore_status():
@@ -25,7 +26,6 @@ def firestore_status():
             status_code=500,
             content={
                 "status": "error",
-                "message": f"Firestore connection failed: {str(e)}"
-            }
+                "message": f"Firestore connection failed: {str(e)}",
+            },
         )
-
