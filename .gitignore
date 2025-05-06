@@ -7,3 +7,7 @@ app/firebase_key.json
 
 # IDE
 .idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
