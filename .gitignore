@@ -1,13 +1,19 @@
 # Virtual Enviroment
-venv/
+.venv/
 
 # Private configuration
 .env
-app/core/firebase_key.json
+app/firebase/firebase_key.json
 
 # IDE
 .idea/
 
+# VSCode
+.vscode/
+
 # Python cache
 __pycache__/
 *.py[cod]
+
+# pytest cache
+.pytest_cache/

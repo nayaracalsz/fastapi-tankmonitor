@@ -1,45 +1,35 @@
 from fastapi import APIRouter, HTTPException
 from firebase_admin import auth
 
-from app.models.user_model import UserFirestore, UserCreate
-
+from app.models.user_model import UserFirestore
+from app.schemas.user_schema import UserCreate
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
 
 @router.post("/register")
 async def register_user(user: UserCreate):
     try:
         if UserFirestore.get_by_email(user.email) is not None:
-            raise HTTPException(
-                status_code=400,
-                detail="Email already registered"
-            )
+            raise HTTPException(status_code=400, detail="Email already registered")
 
         firebase_user = auth.create_user(
-            email=user.email,
-            password=user.password,
-            display_name=user.name
+            email=user.email, password=user.password, display_name=user.name
         )
 
         firestore_user = UserFirestore(
-            uid=firebase_user.uid,
-            email=user.email,
-            name=user.name
+            uid=firebase_user.uid, email=user.email, name=user.name
         )
         firestore_user.save()
 
-        return {"uid": firebase_user.uid,"email": user.email}
+        return {"uid": firebase_user.uid, "email": user.email}
 
     except auth.EmailAlreadyExistsError:
         raise HTTPException(
-            status_code=400,
-            detail="Email already exists in Firebase Auth"
+            status_code=400, detail="Email already exists in Firebase Auth"
         )
 
     except Exception as e:
-        if 'firebase_user' in locals() and firebase_user is not None:
+        if "firebase_user" in locals() and firebase_user is not None:
             auth.delete_user(firebase_user.uid)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Registration failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")

@@ -1,1 +1,1 @@
-from app.core.firebase import db
+from app.firebase.firebase import db
