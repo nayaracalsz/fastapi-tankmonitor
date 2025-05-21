@@ -9,17 +9,18 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register")
 async def register_user(user: UserCreate):
+    lowercase_email = user.email.strip().lower()
     try:
         firebase_user = auth.create_user(
             email=user.email, password=user.password, display_name=user.name
         )
 
         firestore_user = UserFirestore(
-            uid=firebase_user.uid, email=user.email, name=user.name
+            uid=firebase_user.uid, email=lowercase_email, name=user.name
         )
         firestore_user.save()
 
-        return {"uid": firebase_user.uid, "email": user.email}
+        return {"uid": firebase_user.uid, "email": lowercase_email}
 
     except auth.EmailAlreadyExistsError:
         raise HTTPException(status_code=409, detail="Email already exists.")
