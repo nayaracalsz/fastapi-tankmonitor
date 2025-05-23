@@ -34,3 +34,8 @@ class UserFirestore(UserBase):
         user_data = self.model_dump()
         user_data["created_at"] = firestore.SERVER_TIMESTAMP
         db.collection("users").document(self.uid).set(user_data, merge=True)
+
+    def update_last_login(self):
+        db.collection("users").document(self.uid).update(
+            {"last_login": firestore.SERVER_TIMESTAMP}
+        )

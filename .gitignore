@@ -1,6 +1,5 @@
 # Virtual Enviroment
 .venv/
-.venv/
 
 # Private configuration
 .env
@@ -16,5 +15,5 @@ app/firebase/firebase_key.json
 __pycache__/
 *.py[cod]
 
-# pytest cache
+# Pytest cache
 .pytest_cache/

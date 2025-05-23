@@ -4,7 +4,11 @@ import pytest
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
+<<<<<<< HEAD:test/test_auth.py
 from app.middleware.auth import JWTBearer, create_access_token, decodeJWT
+=======
+from app.middleware.jwt_handler import JWTBearer, create_access_token, decodeJWT
+>>>>>>> feature/auth-login:test/test_jwt_tokens.py
 
 
 def test_token_creation_and_verification():

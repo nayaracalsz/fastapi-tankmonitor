@@ -9,6 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt import PyJWTError
 from pydantic import BaseModel
 
+from app.models.user_model import UserFirestore
+
 load_dotenv()
 
 class AuthConfig(BaseModel):
@@ -41,7 +43,8 @@ class JWTBearer(HTTPBearer):
 
     def verify_jwt(self, token: str) -> bool:
         try:
-            decodeJWT(token)
+            payload = decodeJWT(token)
+            verify_token_version(payload)
             return True
         except HTTPException:
             return False
@@ -70,4 +73,12 @@ def decodeJWT(token: str) -> Dict:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Token expired" if "expired" in str(e) else f"Invalid token: {str(e)}"
+        )
+
+def verify_token_version(payload: dict) -> None:
+    user = UserFirestore.get_by_uid(payload["uid"])
+    if not user or user.token_version != payload.get("token_version"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token version mismatch. Please re-login."
         )
