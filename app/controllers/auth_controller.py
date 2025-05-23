@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
 from firebase_admin import auth
 
-from app.core.middleware import create_access_token
-from app.models.user_model import UserCreate, UserFirestore, UserLogin
+from app.middleware import create_access_token
+from app.models.user_model import UserFirestore
+from app.schemas.user_schema import UserCreate, UserLogin
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -16,30 +17,20 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/register")
 async def register_user(user: UserCreate):
-    lowercase_email = user.email.strip().lower()
     try:
-        if UserFirestore.get_by_email(lowercase_email) is not None:
-            raise HTTPException(status_code=400, detail="Email already registered")
-
         firebase_user = auth.create_user(
-            email=lowercase_email, password=user.password, display_name=user.name
+            email=user.email, password=user.password, display_name=user.name
         )
 
         firestore_user = UserFirestore(
-            uid=firebase_user.uid,
-            email=lowercase_email,
-            name=user.name,
-            last_login=datetime.now(timezone.utc),
-            token_version=0,
+            uid=firebase_user.uid, email=user.email, name=user.name
         )
-        firestore_user.create_user()
+        firestore_user.save()
 
-        return {"uid": firebase_user.uid, "email": lowercase_email}
+        return {"uid": firebase_user.uid, "email": user.email}
 
     except auth.EmailAlreadyExistsError:
-        raise HTTPException(
-            status_code=400, detail="Email already exists in Firebase Auth"
-        )
+        raise HTTPException(status_code=409, detail="Email already exists.")
 
     except Exception as e:
         if "firebase_user" in locals() and firebase_user is not None:
@@ -49,11 +40,10 @@ async def register_user(user: UserCreate):
 
 @router.post("/login")
 async def login_user(user: UserLogin):
-    lowercase_email = user.email.strip().lower()
     firebase_login_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
 
     payload = {
-        "email": lowercase_email,
+        "email": user.email,
         "password": user.password,
         "returnSecureToken": True,
     }
@@ -66,18 +56,15 @@ async def login_user(user: UserLogin):
     try:
         login_data = response.json()
 
-        user_record = UserFirestore.get_by_email(lowercase_email)
+        user_record = UserFirestore.get_by_email(user.email)
         if not user_record:
-            raise HTTPException(
-                status_code=401, detail="Invalid credentials (email not registered)"
-            )
+            raise HTTPException(status_code=401, detail="Email not registered")
 
-        user_record.last_login = datetime.now(timezone.utc)
         user_record.update_last_login()
 
         token_data = {
             "uid": login_data.get("localId"),
-            "email": lowercase_email,
+            "email": user.email,
             "token_version": user_record.token_version,
         }
 
@@ -88,7 +75,7 @@ async def login_user(user: UserLogin):
             "token_type": "bearer",
             "user": {
                 "uid": login_data.get("localId"),
-                "email": lowercase_email,
+                "email": user.email,
             },
         }
 

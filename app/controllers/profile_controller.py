@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Request
 
-from app.core.middleware import JWTBearer, decodeJWT
+from app.middleware import JWTBearer, decodeJWT
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 

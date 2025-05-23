@@ -1,32 +1,14 @@
-import re
 from datetime import datetime
 from typing import Optional
 
 from firebase_admin import firestore
 from google.cloud.firestore_v1 import FieldFilter
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import EmailStr
+
+from app.schemas.user_schema import UserBase
 
 db = firestore.client()
 
-class UserBase(BaseModel):
-    email: EmailStr
-    name: str
-    is_active: bool = True
-    created_at: Optional[datetime] = None
-
-    @field_validator('name')
-    @classmethod
-    def validate_name(cls, value):
-        if not value or not value.strip():
-            raise ValueError('The name cannot be empty')
-        if len(value.strip()) < 2:
-            raise ValueError('The name must have at least 2 characters')
-        if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$', value):
-            raise ValueError('The name can only contain letters and spaces')
-        return value
-
-class UserCreate(UserBase):
-    password: str
 
 class UserFirestore(UserBase):
     uid: str
@@ -35,7 +17,12 @@ class UserFirestore(UserBase):
 
     @classmethod
     def get_by_email(cls, email: EmailStr) -> Optional["UserFirestore"]:
-        query = db.collection("users").where(filter=FieldFilter("email", "==", email)).limit(1).get()
+        query = (
+            db.collection("users")
+            .where(filter=FieldFilter("email", "==", email))
+            .limit(1)
+            .get()
+        )
         return cls(**query[0].to_dict()) if query else None
 
     @classmethod
@@ -43,17 +30,12 @@ class UserFirestore(UserBase):
         doc = db.collection("users").document(uid).get()
         return cls(**doc.to_dict()) if doc.exists else None
 
-    def create_user(self):
+    def save(self):
         user_data = self.model_dump()
         user_data["created_at"] = firestore.SERVER_TIMESTAMP
         db.collection("users").document(self.uid).set(user_data, merge=True)
 
     def update_last_login(self):
-        db.collection("users").document(self.uid).update({"last_login": firestore.SERVER_TIMESTAMP})
-
-class UserPublic(UserBase):
-    uid: str
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+        db.collection("users").document(self.uid).update(
+            {"last_login": firestore.SERVER_TIMESTAMP}
+        )
