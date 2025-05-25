@@ -9,12 +9,13 @@ This folder contains all the backend tests for the project, including:
 
 ## 📁 Folder Structure
 
-| File                     | Description                                             |
-| ------------------------ | ------------------------------------------------------- |
-| `conftest.py`            | Shared test fixtures: `client`, `auth_token`, etc.      |
-| `test_auth_routes.py`    | Tests for `/auth/register` and `/auth/login` endpoints. |
-| `test_jwt_tokens.py`     | Unit tests for JWT creation, expiration, and decoding.  |
-| `test_profile_routes.py` | Tests for the `/profile/me` route, protected with JWT.  |
+| File                       | Description                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `conftest.py`              | Shared test fixtures: `client`, `auth_token`, etc.                                         |
+| `test_auth_routes.py`      | Tests for `/auth/register` and `/auth/login` endpoints.                                    |
+| `test_jwt_tokens.py`       | Unit tests for JWT creation, expiration, and decoding.                                     |
+| `test_logout_blacklist.py` | Tests for the `/auth/logout` route, adding also `/profile/me` test with blacklisted token. |
+| `test_profile_routes.py`   | Tests for the `/profile/me` route, protected with JWT.                                     |
 
 Additional test files may be added as features are implemented.
 
