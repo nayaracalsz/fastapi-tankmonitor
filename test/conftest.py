@@ -12,5 +12,6 @@ def client():
 
 @pytest.fixture
 def auth_token():
-    payload = {"uid": "test-user-uid", "email": "test@example.com", "token_version": 0}
-    return create_access_token(payload)
+    payload = {"sub": "test-user-uid", "email": "test@example.com", "token_version": 0}
+    token, jti, exp = create_access_token(payload)
+    return {"token": token, "jti": jti, "exp": exp}

@@ -2,12 +2,11 @@ from fastapi import status
 
 
 def test_profile_with_valid_token(client, auth_token):
-    response = client.get(
-        "/profile/me", headers={"Authorization": f"Bearer {auth_token}"}
-    )
+    token = auth_token["token"]
+    response = client.get("/profile/me", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
-    assert "uid" in data
+    assert "sub" in data
     assert "email" in data
     assert "token_version" in data
     assert "exp" in data
