@@ -13,7 +13,7 @@ async def get_profile(
 ):
     payload = decodeJWT(token)
     return {
-        "uid": payload["uid"],
+        "uid": payload["sub"],
         "email": payload["email"],
         "token_version": payload["token_version"],
         "exp": payload["exp"],

@@ -1,14 +1,16 @@
 import os
-from datetime import datetime, timezone
 
 import requests
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from firebase_admin import auth
 
 from app.middleware import create_access_token
+from app.middleware.jwt_handler import decodeJWT
 from app.models.user_model import UserFirestore
 from app.schemas.user_schema import UserCreate, UserLogin
+from app.services.token_blacklist import add_token_to_blacklist
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -30,12 +32,17 @@ async def register_user(user: UserCreate):
         return {"uid": firebase_user.uid, "email": user.email}
 
     except auth.EmailAlreadyExistsError:
-        raise HTTPException(status_code=409, detail="Email already exists.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already exists."
+        )
 
     except Exception as e:
         if "firebase_user" in locals() and firebase_user is not None:
             auth.delete_user(firebase_user.uid)
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed: {str(e)}",
+        )
 
 
 @router.post("/login")
@@ -50,25 +57,29 @@ async def login_user(user: UserLogin):
 
     response = requests.post(firebase_login_url, json=payload)
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if response.status_code != status.HTTP_200_OK:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
+        )
 
     try:
         login_data = response.json()
 
         user_record = UserFirestore.get_by_email(user.email)
         if not user_record:
-            raise HTTPException(status_code=401, detail="Email not registered")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Email not registered."
+            )
 
         user_record.update_last_login()
 
         token_data = {
-            "uid": login_data.get("localId"),
+            "sub": login_data.get("localId"),
             "email": user.email,
             "token_version": user_record.token_version,
         }
 
-        token = create_access_token(data=token_data)
+        token = create_access_token(token_data)
 
         return {
             "access_token": token,
@@ -81,5 +92,34 @@ async def login_user(user: UserLogin):
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Login failed internally: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login failed internally: {str(e)}",
         )
+
+
+@router.post("/logout")
+async def logout_user(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Authorization header missing.",
+        )
+
+    token = auth_header.split(" ")[1]
+    payload = decodeJWT(token)
+
+    jti = payload.get("jti")
+    exp = payload.get("exp")
+
+    if not jti or not exp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token missing jti or exp",
+        )
+
+    add_token_to_blacklist(jti, exp)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, content={"message": "Logout successful."}
+    )
