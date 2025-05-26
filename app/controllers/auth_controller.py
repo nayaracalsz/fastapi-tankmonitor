@@ -25,11 +25,15 @@ async def register_user(user: UserCreate):
         )
 
         firestore_user = UserFirestore(
-            uid=firebase_user.uid, email=user.email, name=user.name
+            uid=firebase_user.uid, email=user.email, name=user.name, role="client"
         )
         firestore_user.save()
 
-        return {"uid": firebase_user.uid, "email": user.email}
+        return {
+            "message": "User registered successsfully.",
+            "uid": firebase_user.uid,
+            "email": user.email,
+        }
 
     except auth.EmailAlreadyExistsError:
         raise HTTPException(

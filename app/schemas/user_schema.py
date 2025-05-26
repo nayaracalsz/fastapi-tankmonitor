@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -12,10 +13,21 @@ from app.schemas.validators import (
 )
 
 
+class RoleEnum(str, Enum):
+    admin = "admin"
+    employee = "employee"
+    client = "client"
+
+
+class UpdateRoleRequest(BaseModel):
+    role: RoleEnum
+
+
 class UserBase(BaseModel):
     email: EmailStr
     name: str
     is_active: bool = True
+    role: RoleEnum
     created_at: Optional[datetime] = None
 
     @field_validator("email")
@@ -40,6 +52,8 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     uid: str
+    email: EmailStr
+    role: RoleEnum
 
 
 class UserLogin(BaseModel):
@@ -53,5 +67,5 @@ class UserLogin(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def _validate_password(cls, v):
-        return required_field(v, "Password")
+    def _validate_password(cls, value):
+        return required_field(value, "Password")

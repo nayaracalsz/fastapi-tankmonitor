@@ -5,9 +5,8 @@ from firebase_admin import firestore
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import EmailStr
 
+from app.firebase.firebase import db
 from app.schemas.user_schema import UserBase
-
-db = firestore.client()
 
 
 class UserFirestore(UserBase):
