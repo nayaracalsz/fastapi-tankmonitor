@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.controllers.auth_controller import router as auth_controller
+from app.controllers.dashboard_controller import router as dashboard_controller
 from app.controllers.profile_controller import router as profile_controller
 from app.controllers.unit_controller import router as unit_controller
 from app.controllers.user_controller import router as user_controller
@@ -14,6 +15,7 @@ app.include_router(auth_controller)
 app.include_router(profile_controller)
 app.include_router(user_controller)
 app.include_router(unit_controller)
+app.include_router(dashboard_controller)
 
 
 @app.get("/")
