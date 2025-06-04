@@ -10,6 +10,7 @@ from app.firebase.firebase import db
 from app.schemas.unit_record_schema import UnitRecordCreate, UnitRecordResponse
 from app.utils.auth_util import get_user_from_request
 from app.utils.datetime_util import parse_firestore_timestamp
+from app.utils.email_utils import send_email_notification
 from app.utils.handlers import handle_exceptions
 
 router = APIRouter(prefix="/units", tags=["Unit Records"])
@@ -78,6 +79,20 @@ async def create_unit_record(record: UnitRecordCreate, request: Request):
     }
 
     new_doc_ref.set(created_data)
+
+    # Intentar enviar el correo de notificación
+    try:
+        send_email_notification(
+            to=record.registered_email,
+            subject="New Unit Record Created",
+            body=(
+                f"Hello,\n\nYour unit record (ID: {created_data['id']}) has been successfully registered "
+                f"on {created_data['created_at'].strftime('%Y-%m-%d %H:%M:%S')} UTC.\n\n"
+                "Thank you for using TankMonitor!"
+            ),
+        )
+    except Exception as e:
+        print(f"[ERROR] Failed to send email: {e}")
 
     return UnitRecordResponse(**created_data)
 
