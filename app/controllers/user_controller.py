@@ -1,57 +1,49 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.firebase.firebase import db
-from app.middleware.jwt_handler import decodeJWT
 from app.models.user_model import UserFirestore
 from app.schemas.user_schema import UpdateRoleRequest, UserResponse
+from app.utils.auth_util import get_user_from_request
 
 router = APIRouter(prefix="/users", tags=["User Management"])
 
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/")
 def get_all_users(request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Authorization header missing or invalid.",
-        )
-
-    token = auth_header.split("Bearer ")[1]
-    payload = decodeJWT(token)
-
-    requester = UserFirestore.get_by_uid(payload.get("sub"))
-    if not requester or requester.role != "admin":
+    current_user = get_user_from_request(request)
+    if not current_user or current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to view all users.",
         )
 
-    docs = db.collection("users").stream()
+    docs = db.collection("users").get()
     users = []
     for doc in docs:
         data = doc.to_dict()
-        users.append(
-            UserResponse(uid=doc.id, email=data.get("email"), role=data.get("role"))
-        )
+        try:
+            users.append(
+                UserResponse(
+                    uid=doc.id,
+                    email=data["email"],
+                    role=data["role"],
+                    name=data["name"],
+                    is_active=data["is_active"],
+                    created_at=data["created_at"],
+                )
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+            )
 
     return users
 
 
 @router.put("/{uid}/role")
 def update_user_role(uid: str, request: Request, body: UpdateRoleRequest):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Authorization header missing or invalid.",
-        )
-
-    token = auth_header.split("Bearer ")[1]
-    payload = decodeJWT(token)
-
-    requester = UserFirestore.get_by_uid(payload.get("sub"))
-    if not requester or requester.role != "admin":
+    current_user = get_user_from_request(request)
+    if not current_user or current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to update user roles.",

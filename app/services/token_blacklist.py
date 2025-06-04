@@ -1,6 +1,6 @@
 from firebase_admin import firestore
 
-db = firestore.client()
+from app.firebase.firebase import db
 
 
 def add_token_to_blacklist(jti: str, exp: int):
