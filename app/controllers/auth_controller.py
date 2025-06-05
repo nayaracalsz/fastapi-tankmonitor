@@ -11,6 +11,7 @@ from app.middleware.jwt_handler import decodeJWT
 from app.models.user_model import UserFirestore
 from app.schemas.user_schema import UserCreate, UserLogin
 from app.services.token_blacklist import add_token_to_blacklist
+from app.utils.email_utils import send_email_notification
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/register")
 async def register_user(user: UserCreate):
     try:
+        # Create Firebase user
         firebase_user = auth.create_user(
             email=user.email, password=user.password, display_name=user.name
         )
@@ -29,8 +31,15 @@ async def register_user(user: UserCreate):
         )
         firestore_user.save()
 
+        verification_link = auth.generate_email_verification_link(user.email)
+        send_email_notification(
+            to=user.email,
+            subject="Verify your email",
+            body=f"Hello {user.name}, please verify your account by clicking the following link: {verification_link}",
+        )
+
         return {
-            "message": "User registered successsfully.",
+            "message": "User registered successfully. A verification email has been sent.",
             "uid": firebase_user.uid,
             "email": firebase_user.email,
             "role": firestore_user.role,
@@ -70,10 +79,18 @@ async def login_user(user: UserLogin):
     try:
         login_data = response.json()
 
+        firebase_user = auth.get_user_by_email(user.email)
+        if not firebase_user.email_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email not verified. Please check your inbox and verify your account.",
+            )
+
         user_record = UserFirestore.get_by_email(user.email)
         if not user_record:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Email not registered."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email not registered in Firestore.",
             )
 
         user_record.update_last_login()
@@ -92,6 +109,7 @@ async def login_user(user: UserLogin):
             "user": {
                 "uid": login_data.get("localId"),
                 "email": user.email,
+                "email_verified": firebase_user.email_verified,
             },
         }
 

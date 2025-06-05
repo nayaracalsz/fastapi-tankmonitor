@@ -7,6 +7,7 @@ from app.controllers.dashboard_controller import router as dashboard_controller
 from app.controllers.profile_controller import router as profile_controller
 from app.controllers.unit_controller import router as unit_controller
 from app.controllers.user_controller import router as user_controller
+from app.controllers.verify_user_controller import router as verify_user_controller
 from app.firebase.firebase import db
 from app.middleware.security import get_security_middleware
 
@@ -16,6 +17,7 @@ app.include_router(profile_controller)
 app.include_router(user_controller)
 app.include_router(unit_controller)
 app.include_router(dashboard_controller)
+app.include_router(verify_user_controller)
 
 
 @app.get("/")

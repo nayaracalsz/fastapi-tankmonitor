@@ -54,6 +54,7 @@ class UserResponse(UserBase):
     uid: str
     email: EmailStr
     role: RoleEnum
+    email_verified: bool = False
 
 
 class UserLogin(BaseModel):
