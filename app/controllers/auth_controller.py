@@ -2,7 +2,7 @@ import os
 
 import requests
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from firebase_admin import auth
 
@@ -146,3 +146,25 @@ async def logout_user(request: Request):
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"message": "Logout successful."}
     )
+
+
+@router.post("/reset-password")
+async def send_password_reset(
+    email: str = Query(..., description="User email to send password reset link")
+):
+    try:
+        link = auth.generate_password_reset_link(email)
+
+        send_email_notification(
+            to=email,
+            subject="Reset your TankMonitor password",
+            body=f"Click the following link to reset your password: {link}\n\nIf you didn't request this, you can ignore this email.",
+        )
+
+        return {"detail": f"Password reset link sent to {email}"}
+
+    except auth.UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
